@@ -1,0 +1,225 @@
+---
+title: "Time Series Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list=ls())
+cat("\014")
+
+stocks2018 = read.csv("/Users/rishagandhi/Downloads/archive (7)/2018_Financial_Data.csv")
+str(stocks2018)
+library("dplyr") 
+numeric.subset2018 <- select_if(stocks2018, is.numeric)
+```
+
+
+```{r}
+PriceV = read.csv("/Users/rishagandhi/Desktop/UW Courses Q2/Ops Research & Data Analytics/Final Project/All Price Variance.csv")
+
+
+# change the column names
+colnames(PriceV) <- c("Stocks", 2014, 2015, 2016, 2017, 2018)
+print(colnames(PriceV))
+
+# Transpose PriceV
+
+#remember new col names (after transpose, the stocks will be col names)
+n <- PriceV$Stocks
+# transpose everything but the first row (it contains the col names)
+PriceT <- as.data.frame(t(PriceV[,-1]))
+
+# add new col names (stocks)
+colnames(PriceT) <- n
+
+# 
+PriceT$years <- c(2014, 2015, 2016, 2017, 2018)
+
+# get the new row names
+print(rownames(PriceT))
+
+PriceT <- subset(PriceT, select = c("PG"))
+# print(PriceT[,-1])
+# since the years are in string, convert them to numeric
+
+
+#Transposed Price V
+
+# Price2 = t(PriceV)
+# print(colnames(Price2))
+# Price2[1,0] = 2014
+# print(Price2[,0])
+
+
+# Price2$X[Price2$X == "Price.Variance.2014",] <- "2014"
+
+Price2 = ts(PriceT, start = 2014, end=2018, frequency = 1)
+print(Price2)
+ts.plot(Price2, col=1:5)
+legend("topright", col=1:5, lty=1:5)
+
+install.packages(timetk)
+library(dplyr)
+library(timetk)
+
+#Can use the tsclean function to identify and replace outliers and missing values in a time series
+PriceC = ts_clean_vec(Price2, period = 1, lambda = NULL)
+```
+
+
+```{r}
+
+time(Price2)
+
+#Autocorrelation function- can measure seasonality and depends on how many values cut the blue dotted lines
+
+acf(Price2)
+
+#AR model
+AR <- arima(Price2, order=c(1,0,0))
+print(AR)
+
+#Plot AR model
+ts.plot(Price2)
+AR_fit <- Price2 - residuals(AR)
+points(AR_fit, type = "l", col=2, lty=2)
+
+#MA model
+MA <- arima(Price2, order=c(0,0,1))
+print(MA)
+
+#Plot MA model
+ts.plot(Price2)
+MA_fit <- Price2 - residuals(MA)
+points(MA_fit, type = "l", col=2, lty=2)
+
+#ARMA model
+ARMA <- arima(Price2, order=c(2,0,1))
+print(ARMA)
+
+#Plot ARMA model
+ts.plot(Price2)
+ARMA_fit <- Price2 - residuals(ARMA)
+points(ARMA_fit, type = "l", col=2, lty=2)
+
+#ARIMA Model 1 - only kept changing the c values in different types
+ARIMA <- arima(Price2, order=c(1,1,1))
+print(ARIMA)
+
+#Plot ARIMA Model 1
+ts.plot(Price2)
+ARIMA_fit <- Price2 - residuals(ARIMA)
+points(ARIMA_fit, type = "l", col=2, lty=2)
+
+#ARIMA Model 2
+ARIMA2 <- arima(Price2, order=c(1,1,2))
+print(ARIMA2)
+
+#Plot ARIMA Model 2
+ts.plot(Price2)
+ARIMA2_fit <- Price2 - residuals(ARIMA2)
+points(ARIMA2_fit, type = "l", col=2, lty=2)
+
+#ARIMA Model 3
+ARIMA3 <- arima(Price2, order=c(0,1,2))
+print(ARIMA3)
+
+#Plot ARIMA Model 3
+ts.plot(Price2)
+ARIMA3_fit <- Price2 - residuals(ARIMA3)
+points(ARIMA3_fit, type = "l",col=2, lty=2)
+
+#ARIMA Model 4
+ARIMA4 <- arima(Price2, order=c(1,1,0))
+print(ARIMA4)
+
+#Plot ARIMA Model 4
+ts.plot(Price2)
+ARIMA4_fit <- Price2 - residuals(ARIMA4)
+points(ARIMA4_fit, type = "l", col=2, lty=2)
+
+predict_AR <- predict(AR)
+predict_AR$pred[1]
+predict(AR, n.ahead = 3)
+ts.plot(Price2, xlim = c(2014, 2019))
+AR_forecast <- predict(AR, n.ahead = 3)$pred
+AR_forecast_se <- predict(AR, n.ahead = 3)$se
+points(AR_forecast, type = "l", col = 2)
+points(AR_forecast - 2*AR_forecast_se, type = "l", col = 2, lty = 2)
+points(AR_forecast + 2*AR_forecast_se, type = "l", col = 2, lty = 2)
+print(predict_AR)
+predict_AR[1]
+
+predict_ARIMA4 <- predict(ARIMA4)
+predict_ARIMA4$pred[1]
+predict(ARIMA4, n.ahead = 6)
+ts.plot(Price2, xlim = c(2014, 2021))
+ARIMA4_forecast <- predict(ARIMA4, n.ahead = 3)$pred
+ARIMA4_forecast_se <- predict(ARIMA4, n.ahead = 3)$se
+points(ARIMA4_forecast, type = "l", col = 2)
+points(ARIMA4_forecast - 2*ARIMA4_forecast_se, type = "l", col = 2, lty = 2)
+points(ARIMA4_forecast + 2*ARIMA4_forecast_se, type = "l", col = 2, lty = 2)
+```
+
+
+```{r}
+cor(AR_fit, MA_fit)
+AIC(AR)
+BIC(AR)
+
+AIC(MA)
+BIC(MA)
+
+cor(MA_fit, ARMA_fit)
+AIC(MA)
+BIC(MA)
+
+AIC(ARMA)
+BIC(ARMA)
+
+#BEST3
+cor(MA_fit, ARIMA_fit)
+AIC(MA)
+BIC(MA)
+
+AIC(ARIMA)
+BIC(ARIMA)
+
+AIC(ARIMA2)
+BIC(ARIMA2)
+
+AIC(ARIMA3)
+BIC(ARIMA3)
+
+AIC(ARIMA4)
+BIC(ARIMA4)
+
+#BEST2
+cor(ARIMA_fit, ARIMA3_fit)
+AIC(ARIMA)
+BIC(ARIMA)
+
+AIC(ARIMA3)
+BIC(ARIMA3)
+
+#BEST1
+cor(ARIMA4_fit, ARIMA3_fit)
+AIC(ARIMA3)
+BIC(ARIMA3)
+
+AIC(ARIMA4)
+BIC(ARIMA4)
+
+#Theory of AR, MA, ARIMA w.r.t. univariate data
+#Order values -> c values
+#Fit function and why we're subtracting the residual
+#Predict function
+#AIC, BIC, ACF- why low values are 
+
+
+#https://rpubs.com/JSHAH/481706
+```
